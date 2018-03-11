@@ -1,5 +1,11 @@
 <?php
 
+use SilverStripe\ORM\DataExtension;
+use SilverStripe\Control\Director;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\Assets\FileNameFilter;
+use SilverStripe\Assets\Image;
+
 class SimplePdfPreviewImageExtension extends DataExtension
 {
 
@@ -21,7 +27,8 @@ class SimplePdfPreviewImageExtension extends DataExtension
 
     public function getPdfPreviewImage()
     {
-        $pdfFile = Director::getAbsFile($this->owner->getFileName());
+        //$pdfFile = Director::getAbsFile($this->owner->getFileName());
+        $pdfFile = Director::getAbsFile('assets/.protected/' . $this->owner->getMetaData()['path']);
         $pathInfo = pathinfo($pdfFile);
         if (strtolower($pathInfo['extension']) != 'pdf') {
             //@Todo if dev then exception? else fail silently
@@ -29,23 +36,23 @@ class SimplePdfPreviewImageExtension extends DataExtension
         }
         $fileName = $pathInfo['filename'];
 
-        $savePath = __DIR__ . '/../../';
         $saveImage = $this->imagePrefix . '-' . $fileName . '.jpg';
 
         // Fix illegal characters
         $filter = FileNameFilter::create();
         $saveImage = $filter->filter($saveImage);
-        $saveTo = $savePath . $this->folderToSave . $saveImage;
+        $tmpFile = tempnam("/tmp", "pdf");
 
-        $image = DataObject::get_one('Image', "`Name` = '{$saveImage}'");
+        $image = DataObject::get_one('SilverStripe\Assets\Image', "`Name` = '{$saveImage}'");
 
-        if (!$image) {
-            $folderObject = DataObject::get_one("Folder", "`Filename` = '{$this->folderToSave}'");
+        if (!$image || true) {
+            $folderObject = DataObject::get_one("SilverStripe\Assets\Folder", "`Name` = '{$this->folderToSave}'");
             if ($folderObject) {
-                if ($this->generator->generatePreviewImage($pdfFile, $saveTo)) {
+
+            	if ($this->generator->generatePreviewImage($pdfFile, $tmpFile)) {
                     $image = new Image();
+                    $image->setFromLocalFile($tmpFile, $saveImage);
                     $image->ParentID = $folderObject->ID;
-                    $image->setName($saveImage);
                     $image->write();
                 }
             }
@@ -56,11 +63,13 @@ class SimplePdfPreviewImageExtension extends DataExtension
                 $cacheInValid = true;
             }
             if ($cacheInValid) {
-                $this->generator->generatePreviewImage($pdfFile, $saveTo);
-                $image->setName($saveImage);
+                $this->generator->generatePreviewImage($pdfFile, $tmpFile);
+                $image->setFromLocalFile($tmpFile, $saveImage);
                 $image->write(false, false, true);
             }
         }
+        
+        unlink($tmpFile);
         return $image;
     }
 

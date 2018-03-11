@@ -13,8 +13,8 @@
     "require": {
         "php": ">=5.4",
         "ext-imagick": "*",
-        "silverstripe/framework": "3.*",
-        "silverstripe/cms": "3.*"
+        "silverstripe/framework": "4.*",
+        "silverstripe/cms": "4.*"
     },
     "extra": {
         "installer-name": "simple-pdf-preview"

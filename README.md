@@ -21,7 +21,7 @@ Via Composer
 ```
 
 ## Requirements
-- currently only tested in SilverStripe 3.1
+- SilverStripe 4
 - you will need the Imagick extension.
 
 
